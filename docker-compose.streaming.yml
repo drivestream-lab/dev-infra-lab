@@ -1,0 +1,9 @@
+# Extension hole — NOT started by `make infra-up`.
+# Future Kafka / Flink / … join lab_local under profile `streaming`.
+# See docs/extension-hole.md.
+#
+# Example when services exist:
+#   docker compose -p dev-infra-lab -f docker-compose.infra.yml \
+#     -f docker-compose.streaming.yml --profile streaming up -d
+
+services: {}
