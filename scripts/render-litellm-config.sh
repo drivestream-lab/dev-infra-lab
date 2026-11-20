@@ -18,7 +18,7 @@ for name in glm qwen kimi-k3 sonnet; do
   fi
 done
 
-if [[ -f "$ENV_FILE" ]] && grep -Eq '^OPENROUTER_API_KEY=.+' "$ENV_FILE"; then
+if [[ -f "$ENV_FILE" ]] && grep -Eq '^[[:space:]]*(export[[:space:]]+)?OPENROUTER_API_KEY=[[:space:]]*[^[:space:]#]+' "$ENV_FILE"; then
   echo "LiteLLM config ready (glm, qwen, kimi-k3, sonnet via OpenRouter)."
 else
   echo "WARN: OPENROUTER_API_KEY is empty. Set it in .env to call models." >&2
