@@ -1,7 +1,7 @@
 # Shared local-dev lab — postgres, redis, litellm on network lab_local
 # Product overlays: ../adh-iac-local (Buzz), ../realworld-local (api/web)
 
-.PHONY: help infra-up infra-down infra-logs infra-ps infra-health down down-clean
+.PHONY: help infra-up infra-down infra-logs infra-ps infra-health down down-clean platform-up platform-down platform-health
 
 ROOT := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
 LIB := $(ROOT)scripts/compose-lib.sh
@@ -16,6 +16,11 @@ help:
 	@echo "  make infra-health   Probe :5432 :6379 :4000"
 	@echo "  make down           Alias for infra-down"
 	@echo "  make down-clean     Destroy containers AND volumes (DESTRUCTIVE)"
+	@echo ""
+	@echo "Platform (Temporal, Temporal UI, Paperclip). Not started by infra-up:"
+	@echo "  make platform-up      Start core lab, then Temporal, Temporal UI, Paperclip"
+	@echo "  make platform-health  Probe core plus :7233 :8233 :3100"
+	@echo "  make platform-down    Stop Temporal, Temporal UI, and Paperclip (KEEP volumes)"
 	@echo ""
 	@echo "Overlays (separate repos):"
 	@echo "  cd ../adh-iac-local && make buzz-up"
@@ -32,7 +37,23 @@ infra-up:
 	@echo "Lab up. Network: lab_local  UI: http://localhost:4000/ui"
 
 infra-down:
-	@bash -c 'source "$(LIB)" && compose_infra down'
+	@bash -c 'source "$(LIB)" && compose_infra --profile platform down'
+
+platform-up:
+	@$(MAKE) infra-up
+	@bash -c 'source "$(LIB)" && compose_infra --profile platform up -d temporal temporal-ui paperclip'
+	@bash -c 'source "$(LIB)" && wait_container_healthy lab-temporal 240 && wait_container_healthy lab-temporal-ui 120 && wait_container_healthy lab-paperclip 240'
+	@$(MAKE) platform-health
+	@echo "Platform up. Temporal UI: http://localhost:8233  Paperclip: http://localhost:3100"
+
+platform-down:
+	@bash -c 'source "$(LIB)" && compose_infra --profile platform stop temporal temporal-ui paperclip'
+
+platform-health:
+	@$(MAKE) infra-health
+	@bash -c 'source "$(LIB)" && compose_infra exec -T temporal temporal operator cluster health --address temporal:7233'
+	@curl -sf http://localhost:8233 >/dev/null && echo "temporal-ui: ok"
+	@curl -sf http://localhost:3100/api/health >/dev/null && echo "paperclip: ok"
 
 down: infra-down
 
@@ -50,5 +71,5 @@ infra-health:
 	  echo "UI: http://localhost:4000/ui"'
 
 down-clean:
-	@echo "WARNING: removing containers AND volumes (postgres/redis data)."
-	@bash -c 'source "$(LIB)" && compose_infra down -v'
+	@echo "WARNING: removing containers AND volumes (postgres/redis/paperclip data)."
+	@bash -c 'source "$(LIB)" && compose_infra --profile platform down -v'
