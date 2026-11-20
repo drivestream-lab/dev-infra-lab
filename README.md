@@ -30,8 +30,7 @@ Roles created by `scripts/ensure-databases.sh` (passwords in `.env`, names in `.
 
 | Overlay | Owns | Joins |
 | --- | --- | --- |
-| [adh-iac-local](../adh-iac-local) | Buzz API + UI | `lab_local` |
-| [realworld-local](../realworld-local) | RealWorld api + web | `lab_local` |
+| `example-local` | That product's apps | `lab_local` |
 
 No second Postgres/Redis in overlays.
 
@@ -41,11 +40,8 @@ No second Postgres/Redis in overlays.
 cp .env.example .env   # first time
 make infra-up
 
-# ADH Buzz
-cd ../adh-iac-local && make buzz-up
-
-# RealWorld apps
-cd ../realworld-local && make up
+# Example overlay
+cd ../example-local && make up
 ```
 
 Stop (keep data): `make infra-down`  
@@ -68,8 +64,3 @@ Probe core plus Temporal, Temporal UI, and Paperclip: `make platform-health`
 
 See [docker-compose.streaming.yml](docker-compose.streaming.yml) and [docs/extension-hole.md](docs/extension-hole.md).  
 **Not** part of default `infra-up`.
-
-## Migration note (from adh-iac-local infra)
-
-Network renamed `adh_local` → `lab_local`; containers `adh-postgres` → `lab-postgres` (etc.).  
-One-time: stop old stack, `make infra-up` here (new volumes unless you migrate manually).

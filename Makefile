@@ -1,7 +1,7 @@
 # Shared local-dev lab — postgres, redis, litellm on network lab_local
-# Product overlays: ../adh-iac-local (Buzz), ../realworld-local (api/web)
+# Product overlays join lab_local from their own repos. See `make help`.
 
-.PHONY: help infra-up infra-down infra-logs infra-ps infra-health down down-clean platform-up platform-down platform-health
+.PHONY: help infra-up infra-down infra-logs infra-ps infra-health down down-clean platform-up platform-down platform-health paperclip-bootstrap
 
 ROOT := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
 LIB := $(ROOT)scripts/compose-lib.sh
@@ -22,9 +22,15 @@ help:
 	@echo "  make platform-health  Probe core plus :7233 :8233 :3100"
 	@echo "  make platform-down    Stop Temporal, Temporal UI, and Paperclip (KEEP volumes)"
 	@echo ""
+	@echo "Paperclip first admin (after make platform-up):"
+	@echo "  No admin has claimed the instance yet."
+	@echo "  Sign in or create an account in the browser, then claim it:"
+	@echo "    http://localhost:3100/auth?next=/"
+	@echo "  Or print a one-time invite URL from the Paperclip container:"
+	@echo "    make paperclip-bootstrap"
+	@echo ""
 	@echo "Overlays (separate repos):"
-	@echo "  cd ../adh-iac-local && make buzz-up"
-	@echo "  cd ../realworld-local && make up"
+	@echo "  cd ../example-local && make up"
 	@echo ""
 	@echo "Streaming hole (Kafka/Flink): docker-compose.streaming.yml — not default"
 
@@ -48,6 +54,9 @@ platform-up:
 
 platform-down:
 	@bash -c 'source "$(LIB)" && compose_infra --profile platform stop temporal temporal-ui paperclip'
+
+paperclip-bootstrap:
+	@bash -c 'source "$(LIB)" && compose_infra --profile platform exec -T paperclip npx --yes paperclipai auth bootstrap-ceo --base-url http://localhost:3100'
 
 platform-health:
 	@$(MAKE) infra-health

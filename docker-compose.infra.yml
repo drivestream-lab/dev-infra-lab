@@ -1,6 +1,6 @@
 # Shared local-dev lab (Compose project: dev-infra-lab)
 # Usage: make infra-up
-# Network: lab_local — ADH Buzz (adh-iac-local) and realworld-local join as external.
+# Network: lab_local — product overlays join this network as external.
 # Core only: Postgres · Redis · LiteLLM. No product apps. No second Postgres/Redis.
 # Extension hole: see docker-compose.streaming.yml (optional profile; not default).
 
