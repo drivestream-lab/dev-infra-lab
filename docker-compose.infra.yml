@@ -93,6 +93,95 @@ services:
     extra_hosts:
       - "host.docker.internal:host-gateway"
 
+  # Platform profile. Not started by `make infra-up`.
+  # `make platform-up` brings these up after the core lab is healthy.
+  temporal:
+    image: temporalio/auto-setup:1.29.7
+    profiles: ["platform"]
+    container_name: lab-temporal
+    networks:
+      - lab_local
+    ports:
+      - "7233:7233"
+    environment:
+      DB: postgres12
+      DB_PORT: "5432"
+      POSTGRES_USER: temporal
+      POSTGRES_PWD: ${TEMPORAL_DB_PASSWORD:?TEMPORAL_DB_PASSWORD is required}
+      POSTGRES_SEEDS: postgres
+      DBNAME: temporal
+      VISIBILITY_DBNAME: temporal_visibility
+      SKIP_DB_CREATE: "true"
+      DYNAMIC_CONFIG_FILE_PATH: config/dynamicconfig/docker.yaml
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "temporal", "operator", "cluster", "health", "--address", "temporal:7233"]
+      interval: 10s
+      timeout: 5s
+      retries: 18
+      start_period: 30s
+    restart: unless-stopped
+
+  temporal-ui:
+    image: temporalio/ui:2.58.1
+    profiles: ["platform"]
+    container_name: lab-temporal-ui
+    networks:
+      - lab_local
+    ports:
+      - "8233:8080"
+    environment:
+      TEMPORAL_ADDRESS: temporal:7233
+      TEMPORAL_CORS_ORIGINS: http://localhost:8233
+    depends_on:
+      temporal:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8080"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 15s
+    restart: unless-stopped
+
+  paperclip:
+    image: drivestream-lab/paperclip:mandate-baseline-a665ed6
+    profiles: ["platform"]
+    container_name: lab-paperclip
+    networks:
+      - lab_local
+    ports:
+      - "3100:3100"
+    environment:
+      HOST: 0.0.0.0
+      PORT: "3100"
+      PAPERCLIP_HOME: /paperclip
+      DATABASE_URL: postgresql://paperclip:${PAPERCLIP_DB_PASSWORD:?PAPERCLIP_DB_PASSWORD is required}@postgres:5432/paperclip
+      PAPERCLIP_DEPLOYMENT_MODE: authenticated
+      PAPERCLIP_DEPLOYMENT_EXPOSURE: private
+      BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:?BETTER_AUTH_SECRET is required}
+      PAPERCLIP_TOOL_ACTION_SIGNING_SECRET: ${PAPERCLIP_TOOL_ACTION_SIGNING_SECRET:?PAPERCLIP_TOOL_ACTION_SIGNING_SECRET is required}
+    volumes:
+      - paperclip_data:/paperclip
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:3100/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 18
+      start_period: 40s
+    restart: unless-stopped
+
 networks:
   lab_local:
     name: lab_local
@@ -101,3 +190,4 @@ networks:
 volumes:
   postgres_data:
   redis_data:
+  paperclip_data:

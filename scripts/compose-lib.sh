@@ -14,7 +14,21 @@ ensure_env_file() {
   if [[ ! -f "$ENV_FILE" ]]; then
     echo "Creating $ENV_FILE from .env.example (local defaults; not committed)."
     cp "$LAB_ROOT/.env.example" "$LAB_ROOT/$ENV_FILE"
+    return
   fi
+  local missing=0 line key
+  while IFS= read -r line; do
+    [[ "$line" =~ ^[A-Za-z_][A-Za-z0-9_]*= ]] || continue
+    key="${line%%=*}"
+    if ! grep -q "^${key}=" "$ENV_FILE"; then
+      if (( missing == 0 )); then
+        echo "Adding new keys from .env.example to $ENV_FILE."
+        printf '\n' >> "$ENV_FILE"
+      fi
+      printf '%s\n' "$line" >> "$ENV_FILE"
+      missing=1
+    fi
+  done < "$LAB_ROOT/.env.example"
 }
 
 ensure_shared_resources() {
