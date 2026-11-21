@@ -7,6 +7,8 @@ cd "$LAB_ROOT"
 
 INFRA_PROJECT="${INFRA_PROJECT:-dev-infra-lab}"
 INFRA_FILE="${INFRA_FILE:-docker-compose.infra.yml}"
+RUNNER_FILE="${RUNNER_FILE:-docker-compose.runner.yml}"
+RUNNER_TEST_SECRETS_FILE="${RUNNER_TEST_SECRETS_FILE:-docker-compose.runner-test-secrets.yml}"
 ENV_FILE="${ENV_FILE:-.env}"
 LAB_NETWORK="${LAB_NETWORK:-lab_local}"
 
@@ -38,8 +40,20 @@ ensure_shared_resources() {
   fi
 }
 
+# mandate-runner test secrets: the shell variable wins, else the .env line. Default off.
+runner_test_secrets_enabled() {
+  local value="${MANDATE_RUNNER_TEST_SECRETS:-}"
+  if [[ -z "$value" && -f "$ENV_FILE" ]]; then
+    value="$(sed -n 's/^MANDATE_RUNNER_TEST_SECRETS=//p' "$ENV_FILE" | tail -n 1 | tr -d "\"' ")"
+  fi
+  [[ "$value" == "1" ]]
+}
+
 compose_infra() {
-  local args=(-p "$INFRA_PROJECT" -f "$INFRA_FILE")
+  local args=(-p "$INFRA_PROJECT" -f "$INFRA_FILE" -f "$RUNNER_FILE")
+  if runner_test_secrets_enabled; then
+    args+=(-f "$RUNNER_TEST_SECRETS_FILE")
+  fi
   if [[ -f "$ENV_FILE" ]]; then
     args+=(--env-file "$ENV_FILE")
   fi
