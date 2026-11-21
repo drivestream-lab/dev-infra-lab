@@ -147,7 +147,7 @@ services:
     restart: unless-stopped
 
   paperclip:
-    image: drivestream-lab/paperclip:mandate-baseline-a665ed6
+    image: drivestream-lab/paperclip:mandate-acpx-root-pack
     profiles: ["platform"]
     container_name: lab-paperclip
     networks:
@@ -161,6 +161,8 @@ services:
       DATABASE_URL: postgresql://paperclip:${PAPERCLIP_DB_PASSWORD:?PAPERCLIP_DB_PASSWORD is required}@postgres:5432/paperclip
       PAPERCLIP_DEPLOYMENT_MODE: authenticated
       PAPERCLIP_DEPLOYMENT_EXPOSURE: private
+      PAPERCLIP_ACPX_PROVIDER_PACKAGE_ROOT: /opt/paperclip-runner/provider-pack
+      PAPERCLIP_ACPX_PROVIDER_PACKAGE_MANIFEST: /opt/paperclip-runner/provider-pack/package.json
       BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:?BETTER_AUTH_SECRET is required}
       PAPERCLIP_TOOL_ACTION_SIGNING_SECRET: ${PAPERCLIP_TOOL_ACTION_SIGNING_SECRET:?PAPERCLIP_TOOL_ACTION_SIGNING_SECRET is required}
     volumes:
